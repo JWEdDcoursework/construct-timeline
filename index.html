@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mohawk Valley Community College - Historical Timeline</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .timeline-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .timeline-svg {
+            width: 100%;
+            min-width: 1600px;
+        }
+        
+        .timeline-axis {
+            stroke: #34495e;
+            stroke-width: 3;
+        }
+        
+        .decade-marker {
+            stroke: #bdc3c7;
+            stroke-width: 1;
+            stroke-dasharray: 2,4;
+        }
+        
+        .decade-label {
+            font-size: 14px;
+            font-weight: 600;
+            fill: #34495e;
+            text-anchor: middle;
+        }
+        
+        .event-circle {
+            cursor: pointer;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+        }
+        
+        .event-circle:hover {
+            filter: drop-shadow(3px 3px 8px rgba(0,0,0,0.4));
+        }
+        
+        .event-line {
+            stroke: #95a5a6;
+            stroke-width: 1;
+            stroke-dasharray: 2,2;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 13px;
+            pointer-events: none;
+            opacity: 0;
+            max-width: 350px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            z-index: 1000;
+        }
+        
+        .tooltip::before {
+            display: none;
+        }
+        
+        .tooltip-category {
+            font-size: 11px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        
+        .tooltip-year {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .tooltip-content {
+            line-height: 1.4;
+        }
+        
+        .references-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            margin-top: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .references-container h2 {
+            color: #2c3e50;
+            font-size: 2rem;
+            margin-bottom: 30px;
+            text-align: center;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 15px;
+        }
+
+        .references-section {
+            margin-bottom: 30px;
+        }
+
+        .references-section h3 {
+            color: #34495e;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .references-section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .references-section li {
+            background: rgba(52, 73, 94, 0.05);
+            margin-bottom: 8px;
+            padding: 12px 18px;
+            border-radius: 8px;
+            border-left: 3px solid #bdc3c7;
+            font-size: 14px;
+            line-height: 1.4;
+            transition: all 0.2s ease;
+        }
+
+        .references-section li:hover {
+            background: rgba(52, 73, 94, 0.1);
+            border-left-color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .references-section a {
+            color: #3498db;
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .references-section a:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }
+
+        .references-section em {
+            font-style: italic;
+            color: #7f8c8d;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .legend {
+                gap: 20px;
+            }
+            
+            .legend-item {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+            
+            .timeline-container {
+                padding: 20px;
+            }
+            
+            .references-container {
+                padding: 20px;
+            }
+            
+            .references-container h2 {
+                font-size: 1.5rem;
+            }
+            
+            .references-section h3 {
+                font-size: 1.1rem;
+            }
+            
+            .references-section li {
+                padding: 10px 15px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Mohawk Valley Community College</h1>
+            <p>Institutional Development Timeline • 1946-2025</p>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #e74c3c, #c0392b);"></div>
+                <span>Governance</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #3498db, #2980b9);"></div>
+                <span>Faculty</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #2ecc71, #27ae60);"></div>
+                <span>Curriculum</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #f39c12, #e67e22);"></div>
+                <span>Finance</span>
+            </div>
+        </div>
+        
+        <div class="timeline-container">
+            <svg class="timeline-svg" id="timeline"></svg>
+        </div>
+        
+        <div class="references-container">
+            <h2>References</h2>
+            
+            <div class="references-section">
+                <h3>Interviews</h3>
+                <ul>
+                    <li>Tom Squires, VP for Administrative Services</li>
+                    <li>Norma Chrisman, Past President of Professional Association (PA)</li>
+                    <li>Christine Miller, College Senate Chair</li>
+                    <li>Shane McGovern, Association of Mohawk Valley Administrators (AMVA) President</li>
+                    <li>Dennis Gibbons, Dean of Student Life</li>
+                </ul>
+            </div>
+
+            <div class="references-section">
+                <h3>College Catalogs and Documents</h3>
+                <ul>
+                    <li>Mohawk Valley Community College. (1970). Courses of Study. In <em>General Catalog</em> (1970 ed., p. 33).</li>
+                    <li>Mohawk Valley Community College. (1970). Faculty. In <em>General Catalog</em> (1970 ed., p. 152-157).</li>
+                    <li>Mohawk Valley Community College. (1979). Academic Regulations. In <em>College Guide</em> (1979 ed., p. 35).</li>
+                    <li>Mohawk Valley Community College. (1979). Faculty. In <em>College Guide</em> (1979 ed., p. 200-208).</li>
+                    <li>Mohawk Valley Community College. (1989). Academic Programs Directory. In <em>1999-2000 Mohawk Valley Community College Catalog</em> (1989 ed., p. 48).</li>
+                    <li>Mohawk Valley Community College. (1989). Faculty. In <em>1999-2000 Mohawk Valley Community College Catalog</em> (1989 ed., p. 151-155).</li>
+                    <li>Mohawk Valley Community College. (1995). Directory. In <em>Catalog 1995-1996</em> (1995 ed., Appendix A).</li>
+                    <li>Mohawk Valley Community College. (1995). What We Offer. In <em>Catalog 1995-1996</em> (1995 ed., p. 10).</li>
+                    <li>Mohawk Valley Community College. (1999). What We Offer. In <em>1999-2000 Mohawk Valley Community College Catalog</em> (1999 ed., p. 19).</li>
+                    <li>Mohawk Valley Community College. (1999). Faculty. In <em>1999-2000 Mohawk Valley Community College Catalog</em> (1999 ed., Appendix A).</li>
+                    <li>Mohawk Valley Community College. (2015). Certificate Programs and Credit degree Programs. In <em>2015-2016 College Catalog</em> (2015 ed., p. 32-33).</li>
+                    <li>Mohawk Valley Community College. (2015). Faculty. In <em>2015-2016 College Catalog</em> (2015 ed., p. 185-188).</li>
+                    <li>Mohawk Valley Community College. (2019). Credit Degree Programs and Certificates. In <em>College Catalog 2019-2020</em> (2019 ed., p. 101-103).</li>
+                    <li>Mohawk Valley Community College. (2019). MVCC Faculty. In <em>College Catalog 2019-2020</em> (2019 ed., p. 214-216).</li>
+                    <li>Mohawk Valley Community College. (2025). Credit Degree Programs and Certificate Programs. In <em>College Catalog 2025-2026</em> (2025 ed., p. 109-111).</li>
+                    <li>Mohawk Valley Community College. (2025). Mohawk Valley Community College. In <em>College Catalog 2025-2026</em> (2025 ed., p. 222-225).</li>
+                </ul>
+            </div>
+
+            <div class="references-section">
+                <h3>Yearbooks</h3>
+                <ul>
+                    <li>Mohawk Valley Community College Yearbooks, Mohawk Valley Community College Libraries. (1950). <em>The Ivy 1950</em>. <a href="https://nyheritage.contentdm.oclc.org/digital/collection/p16694coll127/id/5342/rec/1" target="_blank">https://nyheritage.contentdm.oclc.org/digital/collection/p16694coll127/id/5342/rec/1</a></li>
+                    <li>Mohawk Valley Community College Yearbooks, Mohawk Valley Community College Libraries. (1956). <em>The Ivy 1956</em>. <a href="https://nyheritage.contentdm.oclc.org/digital/collection/p16694coll127/id/3488/rec/7" target="_blank">https://nyheritage.contentdm.oclc.org/digital/collection/p16694coll127/id/3488/rec/7</a></li>
+                    <li>Mohawk Valley Community College Yearbooks, Mohawk Valley Community College Libraries. (1961). <em>The Ivy 1961</em>. <a href="https://nyheritage.contentdm.oclc.org/digital/collection/p16694coll127/id/2398/rec/12" target="_blank">https://nyheritage.contentdm.oclc.org/digital/collection/p16694coll127/id/2398/rec/12</a></li>
+                    <li>Mohawk Valley Community College Yearbooks, Mohawk Valley Community College Libraries. (1966). <em>The Ivy 1966</em>. <a href="https://nyheritage.contentdm.oclc.org/digital/collection/p16694coll127/id/774/rec/17" target="_blank">https://nyheritage.contentdm.oclc.org/digital/collection/p16694coll127/id/774/rec/17</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Comprehensive data preparation
+        const allEvents = [];
+
+        // Governance events
+        const governanceEvents = [
+            {year: 1946, category: "Governance", event: "Institution Founded with 1 Director and State Board of Trustees", icon: "🏛️"},
+            {year: 1950, category: "Governance", event: "Institution joins SUNY", icon: "🤝"},
+            {year: 1955, category: "Governance", event: "Local Board of Trustees established", icon: "👥"},
+            {year: 1955, category: "Governance", event: "President's Cabinet includes 4 members", icon: "💼"},
+            {year: 1960, category: "Governance", event: "President's Cabinet expands to 7 members", icon: "📈"},
+            {year: 1964, category: "Governance", event: "College Senate convenes for the first time", icon: "🏛️"},
+            {year: 1968, category: "Governance", event: "Student Congress established", icon: "🎓"},
+            {year: 1973, category: "Governance", event: "Professional Association founded (Faculty Collective Bargaining Unit)", icon: "⚖️"},
+            {year: 1984, category: "Governance", event: "Faculty Caucus convenes as sub-committee of College Senate", icon: "👨‍🏫"},
+            {year: 1992, category: "Governance", event: "Association of Mohawk Valley Administrators (AMVA) founded", icon: "👔"},
+            {year: 2025, category: "Governance", event: "President's Cabinet consists of 8 members", icon: "💼"},
+            {year: 2025, category: "Governance", event: "College Senate includes 40+ representatives, 3 student reps", icon: "🗳️"},
+            {year: 2025, category: "Governance", event: "MVCC Board of Trustees: 10 members, 1 student trustee", icon: "👥"}
+        ];
+
+        // Faculty data
+        const facultyEvents = [
+            {year: 1950, category: "Faculty", event: "22 Full-time Faculty Members", value: 22},
+            {year: 1955, category: "Faculty", event: "24 Full-time Faculty Members", value: 24},
+            {year: 1960, category: "Faculty", event: "32 Full-time Faculty Members", value: 32},
+            {year: 1965, category: "Faculty", event: "55 Full-time Faculty Members", value: 55},
+            {year: 1970, category: "Faculty", event: "107 Full-time Faculty Members", value: 107},
+            {year: 1980, category: "Faculty", event: "120 Full-time Faculty Members", value: 120},
+            {year: 1990, category: "Faculty", event: "159 Full-time Faculty Members", value: 159},
+            {year: 1995, category: "Faculty", event: "148 Full-time Faculty Members", value: 148},
+            {year: 2000, category: "Faculty", event: "172 Full-time Faculty Members", value: 172},
+            {year: 2015, category: "Faculty", event: "139 Full-time Faculty Members", value: 139},
+            {year: 2020, category: "Faculty", event: "118 Full-time Faculty Members", value: 118},
+            {year: 2025, category: "Faculty", event: "116 Full-time Faculty Members", value: 116}
+        ];
+
+        // Curriculum data
+        const curriculumEvents = [
+            {year: 1946, category: "Curriculum", event: "3 Programs of Study", value: 3},
+            {year: 1950, category: "Curriculum", event: "3 Programs of Study", value: 3},
+            {year: 1955, category: "Curriculum", event: "4 Programs of Study", value: 4},
+            {year: 1960, category: "Curriculum", event: "7 Programs of Study", value: 7},
+            {year: 1965, category: "Curriculum", event: "9 Programs of Study", value: 9},
+            {year: 1970, category: "Curriculum", event: "14 Programs of Study", value: 14},
+            {year: 1980, category: "Curriculum", event: "39 Programs of Study", value: 39},
+            {year: 1990, category: "Curriculum", event: "80 Programs of Study", value: 80},
+            {year: 1995, category: "Curriculum", event: "94 Programs of Study", value: 94},
+            {year: 2000, category: "Curriculum", event: "82 Programs of Study", value: 82},
+            {year: 2015, category: "Curriculum", event: "90 Programs of Study", value: 90},
+            {year: 2020, category: "Curriculum", event: "76 Programs of Study", value: 76},
+            {year: 2025, category: "Curriculum", event: "79 Programs of Study", value: 79}
+        ];
+
+        // Finance data
+        const financeEvents = [
+            {year: 1999, category: "Finance", event: "Operating Budget: $28.4 Million", value: 28443761},
+            {year: 2000, category: "Finance", event: "Operating Budget: $30.1 Million", value: 30096695},
+            {year: 2001, category: "Finance", event: "Operating Budget: $31.1 Million", value: 31105667},
+            {year: 2002, category: "Finance", event: "Operating Budget: $32.6 Million", value: 32640102},
+            {year: 2003, category: "Finance", event: "Operating Budget: $35.1 Million", value: 35123246},
+            {year: 2004, category: "Finance", event: "Operating Budget: $36.5 Million", value: 36458478},
+            {year: 2005, category: "Finance", event: "Operating Budget: $37.9 Million", value: 37940000},
+            {year: 2006, category: "Finance", event: "Operating Budget: $39.6 Million", value: 39618571},
+            {year: 2007, category: "Finance", event: "Operating Budget: $40.9 Million", value: 40856287},
+            {year: 2008, category: "Finance", event: "Operating Budget: $42.9 Million", value: 42859530},
+            {year: 2009, category: "Finance", event: "Operating Budget: $44.5 Million", value: 44516961},
+            {year: 2010, category: "Finance", event: "Operating Budget: $47.3 Million", value: 47281208},
+            {year: 2011, category: "Finance", event: "Operating Budget: $49.6 Million", value: 49623766},
+            {year: 2012, category: "Finance", event: "Operating Budget: $50.0 Million", value: 50037922},
+            {year: 2013, category: "Finance", event: "Operating Budget: $51.8 Million", value: 51804021},
+            {year: 2014, category: "Finance", event: "Operating Budget: $53.9 Million", value: 53902042},
+            {year: 2015, category: "Finance", event: "Operating Budget: $51.4 Million", value: 51437073},
+            {year: 2016, category: "Finance", event: "Operating Budget: $50.0 Million", value: 49968925},
+            {year: 2017, category: "Finance", event: "Operating Budget: $51.9 Million", value: 51925451},
+            {year: 2018, category: "Finance", event: "Operating Budget: $51.4 Million", value: 51380242},
+            {year: 2019, category: "Finance", event: "Operating Budget: $50.3 Million", value: 50291795},
+            {year: 2020, category: "Finance", event: "Operating Budget: $52.4 Million", value: 52394547},
+            {year: 2021, category: "Finance", event: "Operating Budget: $52.8 Million", value: 52754038},
+            {year: 2022, category: "Finance", event: "Operating Budget: $54.0 Million", value: 53966295},
+            {year: 2023, category: "Finance", event: "Operating Budget: $58.4 Million", value: 58418283},
+            {year: 2024, category: "Finance", event: "Operating Budget: $61.8 Million", value: 61844463}
+        ];
+
+        // Combine all events
+        allEvents.push(...governanceEvents, ...facultyEvents, ...curriculumEvents, ...financeEvents);
+        
+        // Sort by year
+        allEvents.sort((a, b) => a.year - b.year);
+
+        // SVG setup
+        const margin = {top: 80, right: 60, bottom: 80, left: 60};
+        const width = 1600 - margin.left - margin.right;
+        const height = 600 - margin.top - margin.bottom;
+
+        const svg = d3.select("#timeline")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom);
+
+        const g = svg.append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Scales
+        const xScale = d3.scaleLinear()
+            .domain([1945, 2026])
+            .range([0, width]);
+
+        const timelineY = height / 2;
+
+        // Colors
+        const colors = {
+            "Governance": "#e74c3c",
+            "Faculty": "#3498db", 
+            "Curriculum": "#2ecc71",
+            "Finance": "#f39c12"
+        };
+
+        // Draw main timeline axis
+        g.append("line")
+            .attr("class", "timeline-axis")
+            .attr("x1", 0)
+            .attr("x2", width)
+            .attr("y1", timelineY)
+            .attr("y2", timelineY);
+
+        // Draw decade markers and labels
+        for (let year = 1950; year <= 2020; year += 10) {
+            g.append("line")
+                .attr("class", "decade-marker")
+                .attr("x1", xScale(year))
+                .attr("x2", xScale(year))
+                .attr("y1", timelineY - 20)
+                .attr("y2", timelineY + 20);
+
+            g.append("text")
+                .attr("class", "decade-label")
+                .attr("x", xScale(year))
+                .attr("y", timelineY + 40)
+                .text(year);
+        }
+
+        // Create tooltip
+        const tooltip = d3.select("#tooltip");
+
+        // Position events to avoid overlap
+        const positionEvents = (events) => {
+            const positioned = [];
+            const minSpacing = 30;
+            
+            // Group events by year first
+            const eventsByYear = {};
+            events.forEach(event => {
+                if (!eventsByYear[event.year]) {
+                    eventsByYear[event.year] = [];
+                }
+                eventsByYear[event.year].push(event);
+            });
+            
+            // Position each year's events
+            Object.keys(eventsByYear).sort((a, b) => a - b).forEach(year => {
+                const yearEvents = eventsByYear[year];
+                const x = xScale(parseInt(year));
+                
+                if (yearEvents.length === 1) {
+                    // Single event goes on the timeline
+                    positioned.push({
+                        x: x,
+                        y: timelineY,
+                        event: yearEvents[0]
+                    });
+                } else {
+                    // Multiple events get staggered above and below
+                    yearEvents.forEach((event, i) => {
+                        const isEven = i % 2 === 0;
+                        const offset = Math.floor(i / 2) + 1;
+                        const y = timelineY + (isEven ? -40 * offset : 40 * offset);
+                        
+                        positioned.push({
+                            x: x,
+                            y: y,
+                            event: event
+                        });
+                    });
+                }
+            });
+            
+            return positioned;
+        };
+
+        const positionedEvents = positionEvents(allEvents);
+
+        // Draw events
+        positionedEvents.forEach(pos => {
+            const event = pos.event;
+            
+            // Draw connection line from timeline to event
+            if (Math.abs(pos.y - timelineY) > 5) {
+                g.append("line")
+                    .attr("class", "event-line")
+                    .attr("x1", pos.x)
+                    .attr("x2", pos.x)
+                    .attr("y1", timelineY)
+                    .attr("y2", pos.y);
+            }
+
+            // Draw event circle
+            const circle = g.append("circle")
+                .attr("class", "event-circle")
+                .attr("cx", pos.x)
+                .attr("cy", pos.y)
+                .attr("r", 10)
+                .attr("fill", colors[event.category])
+                .attr("stroke", "white")
+                .attr("stroke-width", 3);
+
+            // Add invisible larger circle for better hover detection
+            g.append("circle")
+                .attr("cx", pos.x)
+                .attr("cy", pos.y)
+                .attr("r", 20)
+                .attr("fill", "transparent")
+                .style("cursor", "pointer")
+                .on("mouseenter", function(mouseEvent) {
+                    tooltip.style("opacity", 1);
+                    
+                    let content = `
+                        <div class="tooltip-category" style="color: ${colors[event.category]}">${event.category}</div>
+                        <div class="tooltip-year">${event.year}</div>
+                        <div class="tooltip-content">${event.event}</div>
+                    `;
+                    
+                    tooltip.html(content)
+                        .style("left", (mouseEvent.pageX - 175) + "px")
+                        .style("top", (mouseEvent.pageY - 100) + "px");
+                    
+                    // Highlight the visible circle
+                    circle.attr("r", 12)
+                        .attr("stroke-width", 4);
+                })
+                .on("mouseleave", function() {
+                    tooltip.style("opacity", 0);
+                    
+                    // Reset circle to normal size
+                    circle.attr("r", 10)
+                        .attr("stroke-width", 3);
+                });
+        });
+
+        // Add start and end markers
+        g.append("text")
+            .attr("class", "decade-label")
+            .attr("x", xScale(1946))
+            .attr("y", timelineY + 40)
+            .style("font-weight", "bold")
+            .text("1946");
+
+        g.append("text")
+            .attr("class", "decade-label")
+            .attr("x", xScale(2025))
+            .attr("y", timelineY + 40)
+            .style("font-weight", "bold")
+            .text("2025");
+    </script>
+</body>
+</html>
